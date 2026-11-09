@@ -3,6 +3,9 @@
     "name": "FuerzaBilbaoDemo",
     "slug": "FuerzaBilbaoDemo",
     "version": "1.0.0",
+    "experiments": {
+  "baseUrl": "/FuerzaBilbaoDemo"
+},
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

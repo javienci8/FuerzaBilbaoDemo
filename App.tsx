@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import Entrenamientos from "./Entrenamientos";
 import {
@@ -39,17 +38,24 @@ const GREEN = "#079968";
 export default function App() {
   const { width } = useWindowDimensions();
 
-  // Diseño adaptable según el ancho real de la pantalla.
-  const isPhone = width < 640;
-  const isCompact = width < 1050;
+  const [activeTab, setActiveTab] = useState<
+    "Entrada" | "Entrenamientos"
+  >("Entrada");
+
+  const isMobile = width < 900;
+  const isTablet = width >= 900 && width < 1450;
   const isDesktop = width >= 1450;
 
-  const [activeTab, setActiveTab] = useState<"Entrada" | "Entrenamientos">("Entrada");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Client>(CLIENTS[0]);
   const [pin, setPin] = useState("");
   const [message, setMessage] = useState("");
   const [started, setStarted] = useState(false);
+
+  // En móvil separamos la selección del cliente y la identificación.
+  const [mobileStep, setMobileStep] = useState<
+    "clients" | "pin"
+  >("clients");
 
   const filteredClients = useMemo(() => {
     const value = search.toLowerCase().trim();
@@ -66,6 +72,17 @@ export default function App() {
     setPin("");
     setMessage("");
     setStarted(false);
+
+    if (isMobile) {
+      setMobileStep("pin");
+    }
+  }
+
+  function backToClients() {
+    setPin("");
+    setMessage("");
+    setStarted(false);
+    setMobileStep("clients");
   }
 
   function addNumber(number: string) {
@@ -108,6 +125,7 @@ export default function App() {
     setMessage("Identificación correcta. ¡Vamos a entrenar!");
   }
 
+  // TARJETA DE CLIENTE
   function ClientCard({ client }: { client: Client }) {
     const active = selected.id === client.id;
 
@@ -126,7 +144,12 @@ export default function App() {
           active && styles.clientCardActive,
         ]}
       >
-        <View style={[styles.avatar, active && styles.avatarActive]}>
+        <View
+          style={[
+            styles.avatar,
+            active && styles.avatarActive,
+          ]}
+        >
           <Text
             style={[
               styles.avatarText,
@@ -142,7 +165,7 @@ export default function App() {
             {client.name}
           </Text>
 
-          <Text style={styles.clientDetails}>
+          <Text style={styles.clientDetails} numberOfLines={2}>
             {client.id} · {client.sessions} sesiones disponibles
           </Text>
         </View>
@@ -158,6 +181,69 @@ export default function App() {
     );
   }
 
+  // LISTA DE CLIENTES
+  function ClientsPanel() {
+    return (
+      <>
+        <Text style={styles.eyebrow}>
+          TU ENTRENAMIENTO COMIENZA AQUÍ
+        </Text>
+
+        <Text style={styles.mainTitle}>
+          Identifícate para entrenar
+        </Text>
+
+        <Text style={styles.mainSubtitle}>
+          Busca tu perfil y selecciona tu nombre para continuar.
+        </Text>
+
+        <View style={styles.searchBox}>
+          <Text style={styles.searchIcon}>⌕</Text>
+
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por nombre o código..."
+            placeholderTextColor="#718096"
+            style={styles.searchInput}
+          />
+
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")}>
+              <Text style={styles.clearSearch}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>
+            Selecciona tu perfil
+          </Text>
+
+          <Text style={styles.clientCount}>
+            {filteredClients.length} CLIENTES
+          </Text>
+        </View>
+
+        <View style={styles.clientList}>
+          {filteredClients.length > 0 ? (
+            filteredClients.map((client) => (
+              <ClientCard
+                key={client.id}
+                client={client}
+              />
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              No se han encontrado clientes.
+            </Text>
+          )}
+        </View>
+      </>
+    );
+  }
+
+  // PANEL DE IDENTIFICACIÓN
   function IdentificationPanel() {
     const initials = selected.name
       .split(" ")
@@ -167,7 +253,12 @@ export default function App() {
       .toUpperCase();
 
     return (
-      <View style={[styles.identificationCard, isPhone && styles.identificationCardPhone]}>
+      <View
+        style={[
+          styles.identificationCard,
+          isMobile && styles.identificationCardMobile,
+        ]}
+      >
         <View style={styles.stepRow}>
           <Text style={styles.sectionEyebrow}>
             IDENTIFICACIÓN DE CLIENTE
@@ -186,7 +277,12 @@ export default function App() {
           Introduce los últimos 4 números de tu DNI.
         </Text>
 
-        <View style={[styles.selectedClient, isPhone && styles.selectedClientPhone]}>
+        <View
+          style={[
+            styles.selectedClient,
+            isMobile && styles.selectedClientMobile,
+          ]}
+        >
           <View style={styles.selectedAvatar}>
             <Text style={styles.selectedAvatarText}>
               {initials}
@@ -203,7 +299,12 @@ export default function App() {
             </Text>
           </View>
 
-          <View style={[styles.sessionInfo, isPhone && styles.sessionInfoPhone]}>
+          <View
+            style={[
+              styles.sessionInfo,
+              isMobile && styles.sessionInfoMobile,
+            ]}
+          >
             <Text style={styles.calendarIcon}>▦</Text>
 
             <View>
@@ -218,6 +319,7 @@ export default function App() {
           </View>
         </View>
 
+        {/* CASILLAS DEL PIN */}
         <View style={styles.pinContainer}>
           {[0, 1, 2, 3].map((index) => (
             <View
@@ -234,6 +336,7 @@ export default function App() {
           ))}
         </View>
 
+        {/* TECLADO NUMÉRICO */}
         <View style={styles.keypad}>
           {[
             "1", "2", "3",
@@ -257,7 +360,9 @@ export default function App() {
                 pressed && styles.keyPressed,
               ]}
             >
-              <Text style={styles.keyText}>{number}</Text>
+              <Text style={styles.keyText}>
+                {number}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -296,6 +401,7 @@ export default function App() {
     );
   }
 
+  // PANEL DE MARCA PARA ORDENADOR
   function BrandPanel() {
     return (
       <View style={styles.brandPanel}>
@@ -341,50 +447,6 @@ export default function App() {
     );
   }
 
-  function Navigation() {
-    return (
-      <View style={[styles.navigation, isCompact && styles.navigationCompact]}>
-        <Pressable
-          onPress={() => setActiveTab("Entrada")}
-          style={[
-            styles.navItem,
-            activeTab === "Entrada" && styles.navItemActive,
-          ]}
-        >
-          <Text
-            style={[
-              styles.navText,
-              activeTab === "Entrada" && styles.navActiveText,
-            ]}
-          >
-            ⌂ Entrada
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setActiveTab("Entrenamientos")}
-          style={[
-            styles.navItem,
-            activeTab === "Entrenamientos" && styles.navItemActive,
-          ]}
-        >
-          <Text
-            style={[
-              styles.navText,
-              activeTab === "Entrenamientos" && styles.navActiveText,
-            ]}
-          >
-            ✚ Entrenamientos
-          </Text>
-        </Pressable>
-
-        <View style={styles.navItem}>
-          <Text style={styles.navText}>▥ Historial</Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <ImageBackground
       source={BACKGROUND}
@@ -403,8 +465,7 @@ export default function App() {
       <View
         style={[
           styles.topBar,
-          isCompact && styles.topBarCompact,
-          isPhone && styles.topBarPhone,
+          isMobile && styles.topBarMobile,
         ]}
       >
         <View style={styles.headerBrand}>
@@ -414,7 +475,7 @@ export default function App() {
             resizeMode="contain"
           />
 
-          <View style={styles.headerTextContainer}>
+          <View>
             <Text style={styles.headerTitle}>
               FUERZA BILBAO
             </Text>
@@ -425,11 +486,58 @@ export default function App() {
           </View>
         </View>
 
-        <Navigation />
+        {!isMobile && (
+          <View style={styles.navigation}>
+            <Pressable
+              onPress={() => setActiveTab("Entrada")}
+              style={
+                activeTab === "Entrada"
+                  ? styles.navItemActive
+                  : styles.navItem
+              }
+            >
+              <Text
+                style={
+                  activeTab === "Entrada"
+                    ? styles.navActiveText
+                    : styles.navText
+                }
+              >
+                ⌂ Entrada
+              </Text>
+            </Pressable>
 
-        {!isCompact && (
+            <Pressable
+              onPress={() => setActiveTab("Entrenamientos")}
+              style={
+                activeTab === "Entrenamientos"
+                  ? styles.navItemActive
+                  : styles.navItem
+              }
+            >
+              <Text
+                style={
+                  activeTab === "Entrenamientos"
+                    ? styles.navActiveText
+                    : styles.navText
+                }
+              >
+                ✚ Entrenamientos
+              </Text>
+            </Pressable>
+
+            <View style={styles.navItem}>
+              <Text style={styles.navText}>
+                ▥ Historial
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {!isMobile && (
           <View style={styles.systemStatus}>
             <View style={styles.statusDot} />
+
             <Text style={styles.statusText}>
               Sistema de acceso
             </Text>
@@ -443,97 +551,64 @@ export default function App() {
           style={styles.scroll}
           contentContainerStyle={[
             styles.scrollContent,
-            isCompact && styles.scrollContentCompact,
-            isPhone && styles.scrollContentPhone,
+            isMobile && styles.scrollContentMobile,
           ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          <View
-            style={[
-              styles.mainLayout,
-              isCompact && styles.mainStack,
-              !isCompact && styles.mainColumns,
-            ]}
-          >
-            {/* LISTA DE CLIENTES */}
-            <View
-              style={[
-                styles.clientsColumn,
-                isCompact && styles.columnCompact,
-              ]}
-            >
-              <Text style={styles.eyebrow}>
-                TU ENTRENAMIENTO COMIENZA AQUÍ
-              </Text>
-
-              <Text style={[styles.mainTitle, isPhone && styles.mainTitlePhone]}>
-                Identifícate para entrenar
-              </Text>
-
-              <Text style={styles.mainSubtitle}>
-                Busca tu perfil y selecciona tu nombre para continuar.
-              </Text>
-
-              <View style={styles.searchBox}>
-                <Text style={styles.searchIcon}>⌕</Text>
-
-                <TextInput
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Buscar por nombre o código..."
-                  placeholderTextColor="#718096"
-                  style={styles.searchInput}
-                />
-
-                {search.length > 0 && (
-                  <Pressable onPress={() => setSearch("")}>
-                    <Text style={styles.clearSearch}>✕</Text>
+          {isMobile ? (
+            <View style={styles.mobileFlow}>
+              {mobileStep === "clients" ? (
+                <View style={styles.mobileClientStep}>
+                  <ClientsPanel />
+                </View>
+              ) : (
+                <View style={styles.mobilePinStep}>
+                  <Pressable
+                    onPress={backToClients}
+                    style={({ pressed }) => [
+                      styles.mobileBackButton,
+                      pressed && styles.mobileBackButtonPressed,
+                    ]}
+                  >
+                    <Text style={styles.mobileBackButtonText}>
+                      ← Cambiar de cliente
+                    </Text>
                   </Pressable>
-                )}
-              </View>
 
-              <View style={styles.listHeader}>
-                <Text style={styles.listTitle}>
-                  Selecciona tu perfil
-                </Text>
-
-                <Text style={styles.clientCount}>
-                  {filteredClients.length} CLIENTES
-                </Text>
-              </View>
-
-              <View style={styles.clientList}>
-                {filteredClients.length > 0 ? (
-                  filteredClients.map((client) => (
-                    <ClientCard
-                      key={client.id}
-                      client={client}
-                    />
-                  ))
-                ) : (
-                  <Text style={styles.emptyText}>
-                    No se han encontrado clientes.
-                  </Text>
-                )}
-              </View>
+                  <IdentificationPanel />
+                </View>
+              )}
             </View>
-
-            {/* IDENTIFICACIÓN */}
+          ) : (
             <View
               style={[
-                styles.identificationColumn,
-                isCompact && styles.columnCompact,
+                styles.mainLayout,
+                isTablet && styles.mainTablet,
               ]}
             >
-              <IdentificationPanel />
+              <View
+                style={[
+                  styles.clientsColumn,
+                  isTablet && styles.tabletClients,
+                ]}
+              >
+                <ClientsPanel />
+              </View>
+
+              <View
+                style={[
+                  styles.identificationColumn,
+                  isTablet && styles.tabletIdentification,
+                ]}
+              >
+                <IdentificationPanel />
+              </View>
+
+              {isDesktop && <BrandPanel />}
             </View>
+          )}
 
-            {/* MARCA LATERAL: SOLO ORDENADOR */}
-            {isDesktop && <BrandPanel />}
-          </View>
-
-          {isCompact && (
+          {isMobile && mobileStep === "clients" && (
             <View style={styles.mobileFooter}>
               <Image
                 source={LOGO}
@@ -552,9 +627,7 @@ export default function App() {
           )}
         </ScrollView>
       ) : (
-        <View style={styles.trainingContainer}>
-          <Entrenamientos />
-        </View>
+        <Entrenamientos />
       )}
     </ImageBackground>
   );
@@ -573,7 +646,7 @@ const styles = StyleSheet.create({
 
   backgroundOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(5, 15, 30, 0.55)",
+    backgroundColor: "rgba(5, 15, 30, 0.48)",
   },
 
   // CABECERA
@@ -591,35 +664,21 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 
-  topBarCompact: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 10,
-  },
-
-  topBarPhone: {
+  topBarMobile: {
+    minHeight: 75,
     paddingHorizontal: 15,
-    paddingVertical: 11,
+    paddingVertical: 10,
   },
 
   headerBrand: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    minWidth: 0,
-  },
-
-  headerTextContainer: {
-    minWidth: 0,
   },
 
   headerLogo: {
     width: 54,
     height: 48,
-    flexShrink: 0,
   },
 
   headerTitle: {
@@ -639,37 +698,33 @@ const styles = StyleSheet.create({
   navigation: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-  },
-
-  navigationCompact: {
-    width: "100%",
-    justifyContent: "flex-start",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-
-  navItem: {
-    paddingVertical: 13,
-    paddingHorizontal: 15,
-    borderRadius: 9,
+    gap: 12,
   },
 
   navItemActive: {
     backgroundColor: "#193A4D",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
     borderBottomWidth: 3,
     borderBottomColor: "#35D4D8",
+    borderRadius: 9,
+  },
+
+  navItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+  },
+
+  navActiveText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 14,
   },
 
   navText: {
     color: "#D0DCE9",
     fontSize: 14,
     fontWeight: "700",
-  },
-
-  navActiveText: {
-    color: "#FFFFFF",
-    fontWeight: "900",
   },
 
   systemStatus: {
@@ -696,7 +751,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // CONTENIDO
+  // CONTENIDO RESPONSIVE
 
   scroll: {
     flex: 1,
@@ -706,41 +761,95 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    width: "100%",
     padding: 28,
     paddingBottom: 45,
   },
 
-  scrollContentCompact: {
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 35,
-  },
-
-  scrollContentPhone: {
+  scrollContentMobile: {
+    flexGrow: 1,
     paddingHorizontal: 14,
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 28,
+  },
+
+  mobileFlow: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+    minWidth: 0,
+  },
+
+  mobileClientStep: {
+    width: "100%",
+    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+
+  mobilePinStep: {
+    width: "100%",
+    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+
+  mobileBackButton: {
+    alignSelf: "flex-start",
+    minHeight: 42,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(9,24,43,0.96)",
+    justifyContent: "center",
+  },
+
+  mobileBackButtonPressed: {
+    backgroundColor: "#1B4057",
+  },
+
+  mobileBackButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  identificationCardMobile: {
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+  },
+
+  selectedClientMobile: {
+    flexWrap: "wrap",
+    marginBottom: 20,
+  },
+
+  sessionInfoMobile: {
+    width: "100%",
+    borderLeftWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#A9B7C8",
+    paddingLeft: 0,
+    paddingTop: 10,
+    justifyContent: "center",
   },
 
   mainLayout: {
     width: "100%",
     maxWidth: 1800,
     alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 24,
     minWidth: 0,
   },
 
-  mainColumns: {
+  mainTablet: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 22,
-  },
-
-  mainStack: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: 26,
-    maxWidth: 760,
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 24,
   },
 
   clientsColumn: {
@@ -749,22 +858,22 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
 
+  tabletClients: {
+    width: "48%",
+    flexBasis: "48%",
+    flexGrow: 1,
+    minWidth: 0,
+  },
+
   identificationColumn: {
     flex: 1,
     minWidth: 0,
   },
 
-  columnCompact: {
-    width: "100%",
-    flex: 0,
-    minWidth: 0,
-    alignSelf: "stretch",
-    paddingTop: 0,
-  },
-
-  trainingContainer: {
-    flex: 1,
-    minHeight: 0,
+  tabletIdentification: {
+    width: "48%",
+    flexBasis: "48%",
+    flexGrow: 1,
     minWidth: 0,
   },
 
@@ -783,8 +892,8 @@ const styles = StyleSheet.create({
 
   mainTitle: {
     color: "#FFFFFF",
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 32,
+    lineHeight: 39,
     fontWeight: "900",
     marginBottom: 7,
     textShadowColor: "rgba(0,0,0,0.9)",
@@ -792,16 +901,11 @@ const styles = StyleSheet.create({
     textShadowRadius: 7,
   },
 
-  mainTitlePhone: {
-    fontSize: 29,
-    lineHeight: 35,
-  },
-
   mainSubtitle: {
     color: "#FFFFFF",
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 23,
+    marginBottom: 25,
     textShadowColor: "rgba(0,0,0,0.9)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
@@ -815,11 +919,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#D7E0EA",
-    backgroundColor: "rgba(255,255,255,0.98)",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 17,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 27,
+    marginBottom: 24,
   },
 
   searchIcon: {
@@ -879,7 +983,7 @@ const styles = StyleSheet.create({
   clientCard: {
     width: "100%",
     minHeight: 79,
-    backgroundColor: "rgba(255,255,255,0.98)",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#DFE6EE",
     borderRadius: 16,
@@ -972,7 +1076,7 @@ const styles = StyleSheet.create({
 
   identificationCard: {
     width: "100%",
-    backgroundColor: "rgba(255,255,255,0.99)",
+    backgroundColor: "#FFFFFF",
     borderRadius: 23,
     padding: 25,
     borderWidth: 1,
@@ -982,12 +1086,6 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 7 },
     elevation: 5,
-    minWidth: 0,
-  },
-
-  identificationCardPhone: {
-    padding: 17,
-    borderRadius: 19,
   },
 
   stepRow: {
@@ -1018,8 +1116,7 @@ const styles = StyleSheet.create({
 
   identificationTitle: {
     color: NAVY,
-    fontSize: 27,
-    lineHeight: 34,
+    fontSize: 26,
     fontWeight: "900",
     marginBottom: 5,
   },
@@ -1027,7 +1124,6 @@ const styles = StyleSheet.create({
   identificationSubtitle: {
     color: "#52657C",
     fontSize: 14,
-    lineHeight: 21,
     marginBottom: 20,
   },
 
@@ -1042,11 +1138,6 @@ const styles = StyleSheet.create({
     gap: 11,
     marginBottom: 25,
     minWidth: 0,
-  },
-
-  selectedClientPhone: {
-    flexWrap: "wrap",
-    marginBottom: 20,
   },
 
   selectedAvatar: {
@@ -1092,16 +1183,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
-  sessionInfoPhone: {
-    width: "100%",
-    borderLeftWidth: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#D5DFE9",
-    paddingLeft: 0,
-    paddingTop: 9,
-    justifyContent: "center",
-  },
-
   calendarIcon: {
     color: "#159FA7",
     fontSize: 24,
@@ -1116,17 +1197,16 @@ const styles = StyleSheet.create({
 
   sessionLabel: {
     color: "#52657C",
-    fontSize: 10,
+    fontSize: 9,
   },
 
   // PIN
 
   pinContainer: {
-    width: "100%",
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    marginBottom: 20,
+    gap: 13,
+    marginBottom: 22,
   },
 
   pinBox: {
@@ -1157,12 +1237,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    rowGap: 9,
-    marginBottom: 20,
+    gap: 9,
+    marginBottom: 21,
   },
 
   key: {
-    width: "31.5%",
+    width: "31%",
     height: 51,
     borderRadius: 13,
     backgroundColor: "#EDF2F7",
@@ -1191,7 +1271,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
-    lineHeight: 19,
   },
 
   successMessage: {
@@ -1200,7 +1279,7 @@ const styles = StyleSheet.create({
 
   startButton: {
     width: "100%",
-    minHeight: 62,
+    minHeight: 67,
     backgroundColor: GREEN,
     borderRadius: 17,
     flexDirection: "row",
@@ -1238,14 +1317,14 @@ const styles = StyleSheet.create({
   // MARCA LATERAL
 
   brandPanel: {
-    width: 225,
-    minHeight: 650,
+    width: 245,
+    minHeight: 680,
     borderRadius: 22,
     backgroundColor: "rgba(9,24,43,0.98)",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 35,
-    paddingHorizontal: 16,
+    paddingVertical: 40,
+    paddingHorizontal: 18,
     overflow: "hidden",
     flexShrink: 0,
   },
@@ -1253,18 +1332,18 @@ const styles = StyleSheet.create({
   brandContent: {
     alignItems: "center",
     width: "100%",
-    marginTop: 65,
+    marginTop: 90,
   },
 
   brandLogo: {
-    width: 155,
-    height: 115,
+    width: 165,
+    height: 125,
     marginBottom: 15,
   },
 
   brandName: {
     color: "#FFFFFF",
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: "900",
     textAlign: "center",
   },
@@ -1282,33 +1361,33 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 5,
     backgroundColor: "#2ED4D0",
-    marginVertical: 35,
+    marginVertical: 40,
   },
 
   values: {
     width: "100%",
-    gap: 25,
-    paddingHorizontal: 8,
+    gap: 27,
+    paddingHorizontal: 12,
   },
 
   valueRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
   },
 
   valueIcon: {
     color: "#2ED4D0",
-    fontSize: 27,
-    width: 32,
+    fontSize: 29,
+    width: 35,
     textAlign: "center",
   },
 
   valueText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "900",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 
   brandFooter: {
@@ -1319,7 +1398,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // PIE EN MÓVIL Y TABLET
+  // PIE MÓVIL
 
   mobileFooter: {
     width: "100%",

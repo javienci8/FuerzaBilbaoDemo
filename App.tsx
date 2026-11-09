@@ -629,12 +629,70 @@ export default function App() {
       ) : (
         <Entrenamientos />
       )}
+
+      {/* NAVEGACIÓN INFERIOR PARA MÓVILES */}
+      {isMobile && (
+        <View style={styles.mobileNavigation}>
+          <Pressable
+            onPress={() => setActiveTab("Entrada")}
+            style={[
+              styles.mobileNavButton,
+              activeTab === "Entrada" && styles.mobileNavButtonActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.mobileNavIcon,
+                activeTab === "Entrada" && styles.mobileNavTextActive,
+              ]}
+            >
+              ⌂
+            </Text>
+            <Text
+              style={[
+                styles.mobileNavText,
+                activeTab === "Entrada" && styles.mobileNavTextActive,
+              ]}
+            >
+              Entrada
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setActiveTab("Entrenamientos")}
+            style={[
+              styles.mobileNavButton,
+              activeTab === "Entrenamientos" &&
+                styles.mobileNavButtonActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.mobileNavIcon,
+                activeTab === "Entrenamientos" &&
+                  styles.mobileNavTextActive,
+              ]}
+            >
+              ✚
+            </Text>
+            <Text
+              style={[
+                styles.mobileNavText,
+                activeTab === "Entrenamientos" &&
+                  styles.mobileNavTextActive,
+              ]}
+            >
+              Entrenamientos
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+    screen: {
     flex: 1,
     minWidth: 0,
     backgroundColor: NAVY,
@@ -1229,8 +1287,7 @@ const styles = StyleSheet.create({
     color: NAVY,
     fontSize: 18,
   },
-
-  // TECLADO
+    // TECLADO
 
   keypad: {
     width: "100%",
@@ -1426,5 +1483,51 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 5,
     letterSpacing: 1,
+  },
+
+  // NAVEGACIÓN INFERIOR MÓVIL
+
+  mobileNavigation: {
+    height: 70,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    backgroundColor: "#09182B",
+    borderTopWidth: 1,
+    borderTopColor: "#31465D",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexShrink: 0,
+  },
+
+  mobileNavButton: {
+    flex: 1,
+    height: 54,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+
+  mobileNavButtonActive: {
+    backgroundColor: "#193A4D",
+  },
+
+  mobileNavIcon: {
+    color: "#D0DCE9",
+    fontSize: 21,
+    fontWeight: "900",
+  },
+
+  mobileNavText: {
+    color: "#D0DCE9",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  mobileNavTextActive: {
+    color: "#35D4D8",
+    fontWeight: "900",
   },
 });

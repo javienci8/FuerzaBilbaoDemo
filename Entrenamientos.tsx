@@ -12,7 +12,6 @@ import {
 type Client = {
   id: string;
   name: string;
-  weight: string;
 };
 
 type SavedExercise = {
@@ -26,11 +25,11 @@ type SavedExercise = {
 };
 
 const CLIENTS: Client[] = [
-  { id: "FB001", name: "Álvaro Martín", weight: "45" },
-  { id: "FB002", name: "Laura Gómez", weight: "25" },
-  { id: "FB003", name: "Rodrigo García", weight: "55" },
-  { id: "FB004", name: "María Fernández", weight: "30" },
-  { id: "FB005", name: "David López", weight: "40" },
+  { id: "FB001", name: "Álvaro Martín" },
+  { id: "FB002", name: "Laura Gómez" },
+  { id: "FB003", name: "Rodrigo García" },
+  { id: "FB004", name: "María Fernández" },
+  { id: "FB005", name: "David López" },
 ];
 
 const NAVY = "#101D32";
@@ -40,9 +39,9 @@ const TURQUOISE = "#20B9B9";
 type Mode = "DINÁMICO" | "ISOMÉTRICO";
 
 function formatTime(seconds: number) {
-  const safeSeconds = Math.max(0, seconds);
-  const minutes = Math.floor(safeSeconds / 60);
-  const remaining = safeSeconds % 60;
+  const safe = Math.max(0, seconds);
+  const minutes = Math.floor(safe / 60);
+  const remaining = safe % 60;
 
   return `${String(minutes).padStart(2, "0")}:${String(
     remaining
@@ -51,11 +50,18 @@ function formatTime(seconds: number) {
 
 export default function Entrenamientos() {
   const { width } = useWindowDimensions();
-  const compact = width < 1050;
-  const narrow = width < 390;
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Medimos el ancho REAL disponible para este componente.
+  // Es importante cuando hay una barra lateral en la aplicación.
+  const responsiveWidth = containerWidth > 0 ? containerWidth : width;
+  const compact = containerWidth === 0 || containerWidth <= 900;
+  const phone = responsiveWidth <= 600;
+  const narrow = responsiveWidth <= 390;
 
   const [selectedIds, setSelectedIds] = useState<string[]>(["FB001"]);
   const [activeClientId, setActiveClientId] = useState("FB001");
+
   const [weights, setWeights] = useState<Record<string, string>>({
     FB001: "45",
     FB002: "25",
@@ -98,10 +104,9 @@ export default function Entrenamientos() {
     }
   }, [elapsed, totalSeconds, running]);
 
-  const progress =
-    totalSeconds > 0
-      ? Math.min((elapsed / totalSeconds) * 100, 100)
-      : 0;
+  const progress = Math.min((elapsed / totalSeconds) * 100, 100);
+  const isTimerComplete = elapsed >= totalSeconds;
+  const isUpPhase = mode === "DINÁMICO" && elapsed % 16 < 8;
 
   let phaseTitle = "PREPARADO";
   let phaseDescription = "Pulsa iniciar para comenzar";
@@ -109,7 +114,7 @@ export default function Entrenamientos() {
   let currentRepetition = mode === "DINÁMICO" ? 1 : 0;
   let activeIsoStage = 0;
 
-  if (elapsed >= totalSeconds) {
+  if (isTimerComplete) {
     phaseTitle = "ENTRENAMIENTO COMPLETADO";
     phaseDescription = "Has terminado el protocolo";
     phaseRemaining = 0;
@@ -130,6 +135,7 @@ export default function Entrenamientos() {
     }
   } else {
     activeIsoStage = elapsed < 20 ? 0 : elapsed < 40 ? 1 : 2;
+
     const stages = [
       { title: "ISOMÉTRICO · 50%", description: "Mantén la posición" },
       { title: "ISOMÉTRICO · 80%", description: "Aumenta la intensidad" },
@@ -140,9 +146,6 @@ export default function Entrenamientos() {
     phaseDescription = stages[activeIsoStage].description;
     phaseRemaining = (activeIsoStage + 1) * 20 - elapsed;
   }
-
-  const isUpPhase = mode === "DINÁMICO" && elapsed % 16 < 8;
-  const isTimerComplete = elapsed >= totalSeconds;
 
   function toggleClient(client: Client) {
     const isSelected = selectedIds.includes(client.id);
@@ -195,10 +198,6 @@ export default function Entrenamientos() {
     }
     setRunning(true);
     setNotice("");
-  }
-
-  function pauseTimer() {
-    setRunning(false);
   }
 
   function resetTimer() {
@@ -290,19 +289,21 @@ export default function Entrenamientos() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.page, width < 480 && styles.pageMobile]}
+      contentContainerStyle={[styles.page, phone && styles.pagePhone]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.pageHeader}>
+      <View style={[styles.pageHeader, phone && styles.pageHeaderPhone]}>
         <View style={styles.headingGroup}>
           <Text style={styles.eyebrow}>CONTROL DE MÁQUINA</Text>
-          <Text style={styles.pageTitle}>Entrenamientos</Text>
+          <Text style={[styles.pageTitle, phone && styles.pageTitlePhone]}>
+            Entrenamientos
+          </Text>
           <Text style={styles.pageSubtitle}>
             Gestiona los clientes y controla cada ejercicio.
           </Text>
         </View>
 
-        <View style={styles.machineStatus}>
+        <View style={[styles.machineStatus, phone && styles.machineStatusPhone]}>
           <View style={styles.statusDot} />
           <View>
             <Text style={styles.machineName}>MÁQUINA 01</Text>
@@ -311,10 +312,24 @@ export default function Entrenamientos() {
         </View>
       </View>
 
-      <View style={[styles.mainLayout, compact && styles.mainLayoutCompact]}>
-        {/* COLUMNA DE CLIENTES */}
+      {/* CONTENEDOR RESPONSIVE: CAMBIA DE DOS COLUMNAS A UNA */}
+      <View
+        onLayout={(event) => {
+          const measuredWidth = event.nativeEvent.layout.width;
+          setContainerWidth((currentWidth) =>
+            Math.abs(currentWidth - measuredWidth) > 1
+              ? measuredWidth
+              : currentWidth
+          );
+        }}
+        style={[
+          styles.mainLayout,
+          compact && styles.mainLayoutCompact,
+        ]}
+      >
+        {/* CLIENTES */}
         <View style={[styles.leftColumn, compact && styles.fullColumn]}>
-          <View style={styles.panel}>
+          <View style={[styles.panel, phone && styles.panelPhone]}>
             <View style={styles.panelHeader}>
               <View>
                 <Text style={styles.panelTitle}>Clientes en máquina</Text>
@@ -336,12 +351,10 @@ export default function Entrenamientos() {
               ))}
             </View>
 
-            {notice ? (
-              <Text style={styles.notice}>{notice}</Text>
-            ) : null}
+            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           </View>
 
-          <View style={styles.panel}>
+          <View style={[styles.panel, phone && styles.panelPhone]}>
             <Text style={styles.panelTitle}>Clientes seleccionados</Text>
             <Text style={styles.panelSubtitle}>
               Elige quién está realizando el ejercicio ahora.
@@ -360,9 +373,7 @@ export default function Entrenamientos() {
                   ]}
                 >
                   <View style={styles.activeClientInfo}>
-                    <Text style={styles.activeClientName}>
-                      {client.name}
-                    </Text>
+                    <Text style={styles.activeClientName}>{client.name}</Text>
                     <Text style={styles.clientId}>{client.id}</Text>
                   </View>
 
@@ -375,9 +386,9 @@ export default function Entrenamientos() {
           </View>
         </View>
 
-        {/* COLUMNA DE ENTRENAMIENTO */}
+        {/* CONFIGURACIÓN Y TEMPORIZADOR */}
         <View style={[styles.rightColumn, compact && styles.fullColumn]}>
-          <View style={styles.panel}>
+          <View style={[styles.panel, phone && styles.panelPhone]}>
             <View style={styles.panelHeader}>
               <View>
                 <Text style={styles.panelTitle}>Configuración del ejercicio</Text>
@@ -385,6 +396,7 @@ export default function Entrenamientos() {
                   Define el protocolo de entrenamiento.
                 </Text>
               </View>
+
               <View style={styles.machineTag}>
                 <Text style={styles.machineTagText}>MÁQUINA 01</Text>
               </View>
@@ -392,7 +404,7 @@ export default function Entrenamientos() {
 
             <Text style={styles.fieldLabel}>TIPO DE ENTRENAMIENTO</Text>
 
-            <View style={styles.modeSelector}>
+            <View style={[styles.modeSelector, phone && styles.modeSelectorPhone]}>
               <Pressable
                 onPress={() => changeMode("DINÁMICO")}
                 style={[
@@ -400,20 +412,16 @@ export default function Entrenamientos() {
                   mode === "DINÁMICO" && styles.modeButtonActive,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.modeButtonTitle,
-                    mode === "DINÁMICO" && styles.modeButtonTitleActive,
-                  ]}
-                >
+                <Text style={[
+                  styles.modeButtonTitle,
+                  mode === "DINÁMICO" && styles.modeButtonTitleActive,
+                ]}>
                   DINÁMICO
                 </Text>
-                <Text
-                  style={[
-                    styles.modeButtonDescription,
-                    mode === "DINÁMICO" && styles.modeButtonDescriptionActive,
-                  ]}
-                >
+                <Text style={[
+                  styles.modeButtonDescription,
+                  mode === "DINÁMICO" && styles.modeButtonDescriptionActive,
+                ]}>
                   8 s subida + 8 s bajada
                 </Text>
               </Pressable>
@@ -425,20 +433,16 @@ export default function Entrenamientos() {
                   mode === "ISOMÉTRICO" && styles.modeButtonActive,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.modeButtonTitle,
-                    mode === "ISOMÉTRICO" && styles.modeButtonTitleActive,
-                  ]}
-                >
+                <Text style={[
+                  styles.modeButtonTitle,
+                  mode === "ISOMÉTRICO" && styles.modeButtonTitleActive,
+                ]}>
                   ISOMÉTRICO
                 </Text>
-                <Text
-                  style={[
-                    styles.modeButtonDescription,
-                    mode === "ISOMÉTRICO" && styles.modeButtonDescriptionActive,
-                  ]}
-                >
+                <Text style={[
+                  styles.modeButtonDescription,
+                  mode === "ISOMÉTRICO" && styles.modeButtonDescriptionActive,
+                ]}>
                   50% · 80% · 100%
                 </Text>
               </Pressable>
@@ -461,9 +465,7 @@ export default function Entrenamientos() {
                     <Text style={styles.stepperText}>−</Text>
                   </Pressable>
 
-                  <Text style={styles.repetitionNumber}>
-                    {repetitions}
-                  </Text>
+                  <Text style={styles.repetitionNumber}>{repetitions}</Text>
 
                   <Pressable
                     onPress={() => changeRepetitions(1)}
@@ -475,18 +477,12 @@ export default function Entrenamientos() {
               </View>
             ) : (
               <View style={styles.isoStages}>
-                <View style={styles.isoStage}>
-                  <Text style={styles.isoPercentage}>50%</Text>
-                  <Text style={styles.isoSeconds}>20 segundos</Text>
-                </View>
-                <View style={styles.isoStage}>
-                  <Text style={styles.isoPercentage}>80%</Text>
-                  <Text style={styles.isoSeconds}>20 segundos</Text>
-                </View>
-                <View style={styles.isoStage}>
-                  <Text style={styles.isoPercentage}>100%</Text>
-                  <Text style={styles.isoSeconds}>20 segundos</Text>
-                </View>
+                {["50%", "80%", "100%"].map((percentage) => (
+                  <View key={percentage} style={styles.isoStage}>
+                    <Text style={styles.isoPercentage}>{percentage}</Text>
+                    <Text style={styles.isoSeconds}>20 segundos</Text>
+                  </View>
+                ))}
               </View>
             )}
 
@@ -501,9 +497,7 @@ export default function Entrenamientos() {
               <View style={styles.weightInputRow}>
                 <TextInput
                   value={
-                    activeClient
-                      ? weights[activeClient.id] ?? ""
-                      : ""
+                    activeClient ? weights[activeClient.id] ?? "" : ""
                   }
                   onChangeText={(value) =>
                     activeClient && updateWeight(activeClient.id, value)
@@ -519,15 +513,26 @@ export default function Entrenamientos() {
             </View>
           </View>
 
-          {/* TEMPORIZADOR */}
-          <View style={[styles.timerPanel, narrow && styles.timerPanelNarrow]}>
+          {/* TEMPORIZADOR: SIEMPRE DEBAJO DE LA CONFIGURACIÓN */}
+          <View style={[
+            styles.timerPanel,
+            phone && styles.timerPanelPhone,
+            narrow && styles.timerPanelNarrow,
+          ]}>
             <View style={styles.timerTopRow}>
               <View>
                 <Text style={styles.timerEyebrow}>SESIÓN EN CURSO</Text>
                 <Text style={styles.timerTitle}>Temporizador</Text>
               </View>
-              <View style={[styles.timerStatus, running && styles.timerStatusRunning]}>
-                <View style={[styles.statusDot, running && styles.statusDotRunning]} />
+
+              <View style={[
+                styles.timerStatus,
+                running && styles.timerStatusRunning,
+              ]}>
+                <View style={[
+                  styles.statusDot,
+                  running && styles.statusDotRunning,
+                ]} />
                 <Text style={styles.timerStatusText}>
                   {running
                     ? "EN MARCHA"
@@ -542,90 +547,46 @@ export default function Entrenamientos() {
 
             {mode === "DINÁMICO" ? (
               <View style={styles.dynamicPhaseGrid}>
-                <View
-                  style={[
-                    styles.dynamicPhaseCard,
-                    isUpPhase && !isTimerComplete && styles.dynamicPhaseCardUpActive,
-                  ]}
-                >
+                <View style={[
+                  styles.dynamicPhaseCard,
+                  isUpPhase && !isTimerComplete && styles.dynamicPhaseCardUpActive,
+                ]}>
                   <View style={styles.phaseCardHeading}>
-                    <Text
-                      style={[
-                        styles.dynamicPhaseLabel,
-                        isUpPhase && !isTimerComplete && styles.dynamicPhaseLabelActive,
-                      ]}
-                    >
-                      SUBIDA
-                    </Text>
+                    <Text style={styles.dynamicPhaseLabel}>SUBIDA</Text>
                     {isUpPhase && !isTimerComplete ? (
                       <Text style={styles.phaseNowBadge}>AHORA</Text>
                     ) : null}
                   </View>
-                  <Text
-                    style={[
-                      styles.dynamicPhaseTime,
-                      narrow && styles.dynamicPhaseTimeNarrow,
-                      isUpPhase && !isTimerComplete && styles.dynamicPhaseTimeActive,
-                      isUpPhase && !isTimerComplete && narrow && styles.dynamicPhaseTimeActiveNarrow,
-                    ]}
-                  >
-                    {isTimerComplete
-                      ? "00 s"
-                      : isUpPhase
-                      ? `${phaseRemaining} s`
-                      : "08 s"}
+
+                  <Text style={[
+                    styles.dynamicPhaseTime,
+                    isUpPhase && !isTimerComplete && styles.dynamicPhaseTimeActive,
+                  ]}>
+                    {isTimerComplete ? "00 s" : isUpPhase ? `${phaseRemaining} s` : "08 s"}
                   </Text>
-                  <Text
-                    style={[
-                      styles.dynamicPhaseCaption,
-                      isUpPhase && !isTimerComplete && styles.dynamicPhaseCaptionActive,
-                    ]}
-                  >
-                    Concéntrica
-                  </Text>
+
+                  <Text style={styles.dynamicPhaseCaption}>Concéntrica</Text>
                 </View>
 
-                <View
-                  style={[
-                    styles.dynamicPhaseCard,
-                    !isUpPhase && !isTimerComplete && styles.dynamicPhaseCardDownActive,
-                  ]}
-                >
+                <View style={[
+                  styles.dynamicPhaseCard,
+                  !isUpPhase && !isTimerComplete && styles.dynamicPhaseCardDownActive,
+                ]}>
                   <View style={styles.phaseCardHeading}>
-                    <Text
-                      style={[
-                        styles.dynamicPhaseLabel,
-                        !isUpPhase && !isTimerComplete && styles.dynamicPhaseLabelActive,
-                      ]}
-                    >
-                      BAJADA
-                    </Text>
+                    <Text style={styles.dynamicPhaseLabel}>BAJADA</Text>
                     {!isUpPhase && !isTimerComplete ? (
                       <Text style={styles.phaseNowBadge}>AHORA</Text>
                     ) : null}
                   </View>
-                  <Text
-                    style={[
-                      styles.dynamicPhaseTime,
-                      narrow && styles.dynamicPhaseTimeNarrow,
-                      !isUpPhase && !isTimerComplete && styles.dynamicPhaseTimeActive,
-                      !isUpPhase && !isTimerComplete && narrow && styles.dynamicPhaseTimeActiveNarrow,
-                    ]}
-                  >
-                    {isTimerComplete
-                      ? "00 s"
-                      : !isUpPhase
-                      ? `${phaseRemaining} s`
-                      : "08 s"}
+
+                  <Text style={[
+                    styles.dynamicPhaseTime,
+                    !isUpPhase && !isTimerComplete && styles.dynamicPhaseTimeActive,
+                  ]}>
+                    {isTimerComplete ? "00 s" : !isUpPhase ? `${phaseRemaining} s` : "08 s"}
                   </Text>
-                  <Text
-                    style={[
-                      styles.dynamicPhaseCaption,
-                      !isUpPhase && !isTimerComplete && styles.dynamicPhaseCaptionActive,
-                    ]}
-                  >
-                    Excéntrica
-                  </Text>
+
+                  <Text style={styles.dynamicPhaseCaption}>Excéntrica</Text>
                 </View>
               </View>
             ) : (
@@ -635,7 +596,9 @@ export default function Entrenamientos() {
                   { label: "80%", description: "Intensidad media" },
                   { label: "100%", description: "Intensidad máxima" },
                 ].map((stage, index) => {
-                  const active = activeIsoStage === index && !isTimerComplete;
+                  const active =
+                    activeIsoStage === index && !isTimerComplete;
+
                   return (
                     <View
                       key={stage.label}
@@ -644,30 +607,25 @@ export default function Entrenamientos() {
                         active && styles.isoTimerCardActive,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.isoTimerPercent,
-                          active && styles.isoTimerPercentActive,
-                        ]}
-                      >
+                      <Text style={[
+                        styles.isoTimerPercent,
+                        active && styles.isoTimerPercentActive,
+                      ]}>
                         {stage.label}
                       </Text>
-                      <Text
-                        style={[
-                          styles.isoTimerTime,
-                          narrow && styles.isoTimerTimeNarrow,
-                          active && styles.isoTimerTimeActive,
-                          active && narrow && styles.isoTimerTimeActiveNarrow,
-                        ]}
-                      >
-                        {isTimerComplete ? "00 s" : active ? `${phaseRemaining} s` : "20 s"}
+
+                      <Text style={[
+                        styles.isoTimerTime,
+                        active && styles.isoTimerTimeActive,
+                      ]}>
+                        {isTimerComplete
+                          ? "00 s"
+                          : active
+                          ? `${phaseRemaining} s`
+                          : "20 s"}
                       </Text>
-                      <Text
-                        style={[
-                          styles.isoTimerDescription,
-                          active && styles.isoTimerDescriptionActive,
-                        ]}
-                      >
+
+                      <Text style={styles.isoTimerDescription}>
                         {active ? "AHORA" : stage.description}
                       </Text>
                     </View>
@@ -678,14 +636,19 @@ export default function Entrenamientos() {
 
             <View style={styles.timerMetaRow}>
               <View style={styles.totalTimeBlock}>
-                <Text style={styles.timerRemainingLabel}>TIEMPO TOTAL RESTANTE</Text>
+                <Text style={styles.timerRemainingLabel}>
+                  TIEMPO TOTAL RESTANTE
+                </Text>
                 <Text style={styles.totalTimeValue}>
                   {formatTime(totalSeconds - elapsed)}
                 </Text>
               </View>
+
               {mode === "DINÁMICO" ? (
                 <View style={styles.repetitionMeta}>
-                  <Text style={styles.repetitionProgressLabel}>REPETICIÓN</Text>
+                  <Text style={styles.repetitionProgressLabel}>
+                    REPETICIÓN
+                  </Text>
                   <Text style={styles.repetitionProgressValue}>
                     {currentRepetition} / {repetitions}
                   </Text>
@@ -694,12 +657,10 @@ export default function Entrenamientos() {
             </View>
 
             <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%` },
-                ]}
-              />
+              <View style={[
+                styles.progressFill,
+                { width: `${progress}%` },
+              ]} />
             </View>
 
             <Text style={styles.phaseDescriptionTimer}>
@@ -715,15 +676,17 @@ export default function Entrenamientos() {
                   style={[styles.timerButton, styles.timerStartButton]}
                 >
                   <Text style={styles.timerStartText}>
-                    ▶ {elapsed > 0 && elapsed < totalSeconds ? "REANUDAR" : "INICIAR"}
+                    ▶ {elapsed > 0 && elapsed < totalSeconds
+                      ? "REANUDAR"
+                      : "INICIAR"}
                   </Text>
                 </Pressable>
               ) : (
                 <Pressable
-                  onPress={pauseTimer}
+                  onPress={() => setRunning(false)}
                   style={[styles.timerButton, styles.timerPauseButton]}
                 >
-                  <Text style={styles.timerPauseText}>Ⅱ  PAUSAR</Text>
+                  <Text style={styles.timerPauseText}>Ⅱ PAUSAR</Text>
                 </Pressable>
               )}
 
@@ -731,16 +694,13 @@ export default function Entrenamientos() {
                 onPress={resetTimer}
                 style={[styles.timerButton, styles.timerResetButton]}
               >
-                <Text style={styles.timerResetText}>↻  REINICIAR</Text>
+                <Text style={styles.timerResetText}>↻ REINICIAR</Text>
               </Pressable>
             </View>
 
-            <Pressable
-              onPress={saveExercise}
-              style={styles.saveButton}
-            >
+            <Pressable onPress={saveExercise} style={styles.saveButton}>
               <Text style={styles.saveButtonText}>
-                ✓  GUARDAR EJERCICIO DEL CLIENTE
+                ✓ GUARDAR EJERCICIO DEL CLIENTE
               </Text>
             </Pressable>
 
@@ -752,7 +712,7 @@ export default function Entrenamientos() {
       </View>
 
       {/* HISTORIAL */}
-      <View style={styles.historyPanel}>
+      <View style={[styles.historyPanel, phone && styles.historyPanelPhone]}>
         <View style={styles.panelHeader}>
           <View>
             <Text style={styles.panelTitle}>Historial de esta sesión</Text>
@@ -826,10 +786,10 @@ const styles = StyleSheet.create({
     paddingBottom: 45,
   },
 
-  pageMobile: {
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 32,
+  pagePhone: {
+    paddingHorizontal: 10,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
 
   pageHeader: {
@@ -839,6 +799,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 15,
     marginBottom: 24,
+  },
+
+  pageHeaderPhone: {
+    alignItems: "stretch",
+    gap: 10,
+    marginBottom: 14,
   },
 
   headingGroup: {
@@ -860,6 +826,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
+  pageTitlePhone: {
+    fontSize: 26,
+    lineHeight: 31,
+  },
+
   pageSubtitle: {
     color: "#64748B",
     fontSize: 14,
@@ -876,6 +847,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+
+  machineStatusPhone: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
 
   statusDot: {
@@ -897,35 +874,56 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  // DISTRIBUCIÓN PRINCIPAL
+  // Escritorio: clientes a la izquierda y entrenamiento a la derecha.
+  // Ventana estrecha: clientes arriba y entrenamiento debajo.
+
   mainLayout: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 20,
+    width: "100%",
     minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "flex-start",
+    alignSelf: "stretch",
+    position: "relative",
+    gap: 20,
   },
 
   mainLayoutCompact: {
+    width: "100%",
+    minWidth: 0,
     flexDirection: "column",
+    flexWrap: "nowrap",
     alignItems: "stretch",
+    alignSelf: "stretch",
+    gap: 0,
   },
 
   leftColumn: {
-    width: 350,
+    width: 320,
+    minWidth: 0,
     flexShrink: 0,
-    gap: 18,
+    alignSelf: "flex-start",
+    gap: 0,
   },
 
   rightColumn: {
     flex: 1,
+    flexBasis: 0,
     minWidth: 0,
-    gap: 18,
+    flexShrink: 1,
+    alignSelf: "stretch",
+    gap: 0,
   },
 
   fullColumn: {
     width: "100%",
+    maxWidth: "100%",
     flex: 0,
+    flexBasis: "auto",
     minWidth: 0,
     flexShrink: 1,
+    alignSelf: "stretch",
   },
 
   panel: {
@@ -935,6 +933,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     marginBottom: 18,
+    minWidth: 0,
+  },
+
+  panelPhone: {
+    borderRadius: 15,
+    padding: 14,
+    marginBottom: 12,
   },
 
   panelHeader: {
@@ -1135,6 +1140,12 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
 
+  modeSelectorPhone: {
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 14,
+  },
+
   modeButton: {
     flex: 1,
     minWidth: 0,
@@ -1248,7 +1259,7 @@ const styles = StyleSheet.create({
   },
 
   weightSection: {
-    marginTop: 20,
+    marginTop: 16,
   },
 
   weightHeading: {
@@ -1293,10 +1304,19 @@ const styles = StyleSheet.create({
   // TEMPORIZADOR
 
   timerPanel: {
+    width: "100%",
+    minWidth: 0,
     backgroundColor: NAVY,
     borderRadius: 19,
     padding: 22,
     marginBottom: 18,
+    position: "relative",
+  },
+
+  timerPanelPhone: {
+    padding: 15,
+    borderRadius: 16,
+    marginBottom: 12,
   },
 
   timerPanelNarrow: {
@@ -1353,6 +1373,7 @@ const styles = StyleSheet.create({
   },
 
   dynamicPhaseGrid: {
+    width: "100%",
     flexDirection: "row",
     gap: 12,
     marginBottom: 16,
@@ -1395,10 +1416,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  dynamicPhaseLabelActive: {
-    color: "#FFFFFF",
-  },
-
   phaseNowBadge: {
     color: "#062C2D",
     backgroundColor: "#6FE0DA",
@@ -1425,27 +1442,14 @@ const styles = StyleSheet.create({
     lineHeight: 59,
   },
 
-  dynamicPhaseTimeNarrow: {
-    fontSize: 35,
-    lineHeight: 43,
-  },
-
-  dynamicPhaseTimeActiveNarrow: {
-    fontSize: 40,
-    lineHeight: 48,
-  },
-
   dynamicPhaseCaption: {
     color: "#AFC1D3",
     fontSize: 11,
     fontWeight: "700",
   },
 
-  dynamicPhaseCaptionActive: {
-    color: "#BDFBF0",
-  },
-
   isoTimerGrid: {
+    width: "100%",
     flexDirection: "row",
     gap: 8,
     marginBottom: 16,
@@ -1493,24 +1497,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  isoTimerTimeNarrow: {
-    fontSize: 21,
-  },
-
-  isoTimerTimeActiveNarrow: {
-    fontSize: 24,
-  },
-
   isoTimerDescription: {
     color: "#AFC1D3",
     fontSize: 8,
     fontWeight: "800",
     textAlign: "center",
     marginTop: 7,
-  },
-
-  isoTimerDescriptionActive: {
-    color: "#BDFBF0",
   },
 
   timerMetaRow: {
@@ -1658,12 +1650,19 @@ const styles = StyleSheet.create({
   // HISTORIAL
 
   historyPanel: {
+    width: "100%",
+    minWidth: 0,
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     padding: 20,
-    marginTop: 3,
+    marginTop: 18,
+  },
+
+  historyPanelPhone: {
+    padding: 14,
+    borderRadius: 15,
   },
 
   emptyHistory: {
@@ -1737,6 +1736,7 @@ const styles = StyleSheet.create({
     color: "#52657C",
     fontSize: 11,
     marginTop: 4,
+    flexShrink: 1,
   },
 
   historyMeta: {

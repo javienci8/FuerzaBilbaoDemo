@@ -38,13 +38,13 @@ const GREEN = "#079968";
 
 export default function App() {
   const { width } = useWindowDimensions();
-  const [activeTab, setActiveTab] = useState<"Entrada" | "Entrenamientos">("Entrada");
 
-  // Puntos de ruptura amplios para evitar columnas demasiado estrechas.
-  const isMobile = width < 900;
-  const isTablet = width >= 900 && width < 1450;
+  // Diseño adaptable según el ancho real de la pantalla.
+  const isPhone = width < 640;
+  const isCompact = width < 1050;
   const isDesktop = width >= 1450;
 
+  const [activeTab, setActiveTab] = useState<"Entrada" | "Entrenamientos">("Entrada");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Client>(CLIENTS[0]);
   const [pin, setPin] = useState("");
@@ -142,7 +142,7 @@ export default function App() {
             {client.name}
           </Text>
 
-          <Text style={styles.clientDetails} numberOfLines={2}>
+          <Text style={styles.clientDetails}>
             {client.id} · {client.sessions} sesiones disponibles
           </Text>
         </View>
@@ -167,13 +167,15 @@ export default function App() {
       .toUpperCase();
 
     return (
-      <View style={styles.identificationCard}>
+      <View style={[styles.identificationCard, isPhone && styles.identificationCardPhone]}>
         <View style={styles.stepRow}>
           <Text style={styles.sectionEyebrow}>
             IDENTIFICACIÓN DE CLIENTE
           </Text>
 
-          <Text style={styles.stepBadge}>PASO 02 DE 02</Text>
+          <Text style={styles.stepBadge}>
+            PASO 02 DE 02
+          </Text>
         </View>
 
         <Text style={styles.identificationTitle}>
@@ -184,7 +186,7 @@ export default function App() {
           Introduce los últimos 4 números de tu DNI.
         </Text>
 
-        <View style={styles.selectedClient}>
+        <View style={[styles.selectedClient, isPhone && styles.selectedClientPhone]}>
           <View style={styles.selectedAvatar}>
             <Text style={styles.selectedAvatarText}>
               {initials}
@@ -201,7 +203,7 @@ export default function App() {
             </Text>
           </View>
 
-          <View style={styles.sessionInfo}>
+          <View style={[styles.sessionInfo, isPhone && styles.sessionInfoPhone]}>
             <Text style={styles.calendarIcon}>▦</Text>
 
             <View>
@@ -339,6 +341,50 @@ export default function App() {
     );
   }
 
+  function Navigation() {
+    return (
+      <View style={[styles.navigation, isCompact && styles.navigationCompact]}>
+        <Pressable
+          onPress={() => setActiveTab("Entrada")}
+          style={[
+            styles.navItem,
+            activeTab === "Entrada" && styles.navItemActive,
+          ]}
+        >
+          <Text
+            style={[
+              styles.navText,
+              activeTab === "Entrada" && styles.navActiveText,
+            ]}
+          >
+            ⌂ Entrada
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setActiveTab("Entrenamientos")}
+          style={[
+            styles.navItem,
+            activeTab === "Entrenamientos" && styles.navItemActive,
+          ]}
+        >
+          <Text
+            style={[
+              styles.navText,
+              activeTab === "Entrenamientos" && styles.navActiveText,
+            ]}
+          >
+            ✚ Entrenamientos
+          </Text>
+        </Pressable>
+
+        <View style={styles.navItem}>
+          <Text style={styles.navText}>▥ Historial</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ImageBackground
       source={BACKGROUND}
@@ -354,7 +400,13 @@ export default function App() {
       />
 
       {/* CABECERA */}
-      <View style={[styles.topBar, isMobile && styles.topBarMobile]}>
+      <View
+        style={[
+          styles.topBar,
+          isCompact && styles.topBarCompact,
+          isPhone && styles.topBarPhone,
+        ]}
+      >
         <View style={styles.headerBrand}>
           <Image
             source={LOGO}
@@ -362,7 +414,7 @@ export default function App() {
             resizeMode="contain"
           />
 
-          <View>
+          <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>
               FUERZA BILBAO
             </Text>
@@ -373,33 +425,9 @@ export default function App() {
           </View>
         </View>
 
-        {!isMobile && (
-          <View style={styles.navigation}>
-  <Pressable
-    onPress={() => setActiveTab("Entrada")}
-    style={activeTab === "Entrada" ? styles.navItemActive : styles.navItem}
-  >
-    <Text style={activeTab === "Entrada" ? styles.navActiveText : styles.navText}>
-      ⌂ Entrada
-    </Text>
-  </Pressable>
+        <Navigation />
 
-  <Pressable
-    onPress={() => setActiveTab("Entrenamientos")}
-    style={activeTab === "Entrenamientos" ? styles.navItemActive : styles.navItem}
-  >
-    <Text style={activeTab === "Entrenamientos" ? styles.navActiveText : styles.navText}>
-      ✚ Entrenamientos
-    </Text>
-  </Pressable>
-
-  <View style={styles.navItem}>
-    <Text style={styles.navText}>▥ Historial</Text>
-  </View>
-</View>
-        )}
-
-        {!isMobile && (
+        {!isCompact && (
           <View style={styles.systemStatus}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>
@@ -411,121 +439,123 @@ export default function App() {
 
       {/* CONTENIDO */}
       {activeTab === "Entrada" ? (
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          isMobile && styles.scrollContentMobile,
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.mainLayout,
-            isMobile && styles.mainMobile,
-            isTablet && styles.mainTablet,
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isCompact && styles.scrollContentCompact,
+            isPhone && styles.scrollContentPhone,
           ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* CLIENTES */}
           <View
             style={[
-              styles.clientsColumn,
-              isMobile && styles.mobileColumn,
-              isTablet && styles.tabletClients,
+              styles.mainLayout,
+              isCompact && styles.mainStack,
+              !isCompact && styles.mainColumns,
             ]}
           >
-            <Text style={styles.eyebrow}>
-              TU ENTRENAMIENTO COMIENZA AQUÍ
-            </Text>
+            {/* LISTA DE CLIENTES */}
+            <View
+              style={[
+                styles.clientsColumn,
+                isCompact && styles.columnCompact,
+              ]}
+            >
+              <Text style={styles.eyebrow}>
+                TU ENTRENAMIENTO COMIENZA AQUÍ
+              </Text>
 
-            <Text style={styles.mainTitle}>
-              Identifícate para entrenar
-            </Text>
+              <Text style={[styles.mainTitle, isPhone && styles.mainTitlePhone]}>
+                Identifícate para entrenar
+              </Text>
 
-            <Text style={styles.mainSubtitle}>
-              Busca tu perfil y selecciona tu nombre para continuar.
-            </Text>
+              <Text style={styles.mainSubtitle}>
+                Busca tu perfil y selecciona tu nombre para continuar.
+              </Text>
 
-            <View style={styles.searchBox}>
-              <Text style={styles.searchIcon}>⌕</Text>
+              <View style={styles.searchBox}>
+                <Text style={styles.searchIcon}>⌕</Text>
 
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Buscar por nombre o código..."
-                placeholderTextColor="#718096"
-                style={styles.searchInput}
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Buscar por nombre o código..."
+                  placeholderTextColor="#718096"
+                  style={styles.searchInput}
+                />
+
+                {search.length > 0 && (
+                  <Pressable onPress={() => setSearch("")}>
+                    <Text style={styles.clearSearch}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <View style={styles.listHeader}>
+                <Text style={styles.listTitle}>
+                  Selecciona tu perfil
+                </Text>
+
+                <Text style={styles.clientCount}>
+                  {filteredClients.length} CLIENTES
+                </Text>
+              </View>
+
+              <View style={styles.clientList}>
+                {filteredClients.length > 0 ? (
+                  filteredClients.map((client) => (
+                    <ClientCard
+                      key={client.id}
+                      client={client}
+                    />
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>
+                    No se han encontrado clientes.
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* IDENTIFICACIÓN */}
+            <View
+              style={[
+                styles.identificationColumn,
+                isCompact && styles.columnCompact,
+              ]}
+            >
+              <IdentificationPanel />
+            </View>
+
+            {/* MARCA LATERAL: SOLO ORDENADOR */}
+            {isDesktop && <BrandPanel />}
+          </View>
+
+          {isCompact && (
+            <View style={styles.mobileFooter}>
+              <Image
+                source={LOGO}
+                style={styles.mobileLogo}
+                resizeMode="contain"
               />
 
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")}>
-                  <Text style={styles.clearSearch}>✕</Text>
-                </Pressable>
-              )}
-            </View>
-
-            <View style={styles.listHeader}>
-              <Text style={styles.listTitle}>
-                Selecciona tu perfil
+              <Text style={styles.mobileBrand}>
+                FUERZA BILBAO
               </Text>
 
-              <Text style={styles.clientCount}>
-                {filteredClients.length} CLIENTES
+              <Text style={styles.mobileFooterText}>
+                CENTRO DE ENTRENAMIENTO
               </Text>
             </View>
-
-            <View style={styles.clientList}>
-              {filteredClients.length > 0 ? (
-                filteredClients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    client={client}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>
-                  No se han encontrado clientes.
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* IDENTIFICACIÓN */}
-          <View
-            style={[
-              styles.identificationColumn,
-              isMobile && styles.mobileColumn,
-              isTablet && styles.tabletIdentification,
-            ]}
-          >
-            <IdentificationPanel />
-          </View>
-
-          {/* MARCA LATERAL: SOLO ORDENADOR */}
-          {isDesktop && <BrandPanel />}
-        </View>
-
-        {isMobile && (
-          <View style={styles.mobileFooter}>
-            <Image
-              source={LOGO}
-              style={styles.mobileLogo}
-              resizeMode="contain"
-            />
-
-            <Text style={styles.mobileBrand}>
-              FUERZA BILBAO
-            </Text>
-
-            <Text style={styles.mobileFooterText}>
-              CENTRO DE ENTRENAMIENTO
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
       ) : (
-  <Entrenamientos />
-)}
+        <View style={styles.trainingContainer}>
+          <Entrenamientos />
+        </View>
+      )}
     </ImageBackground>
   );
 }
@@ -541,10 +571,10 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
 
-backgroundOverlay: {
-  ...StyleSheet.absoluteFill,
-  backgroundColor: "rgba(5, 15, 30, 0.48)",
-},
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(5, 15, 30, 0.55)",
+  },
 
   // CABECERA
 
@@ -561,21 +591,35 @@ backgroundOverlay: {
     zIndex: 2,
   },
 
-  topBarMobile: {
-    minHeight: 75,
+  topBarCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 10,
+  },
+
+  topBarPhone: {
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
 
   headerBrand: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    minWidth: 0,
+  },
+
+  headerTextContainer: {
+    minWidth: 0,
   },
 
   headerLogo: {
     width: 54,
     height: 48,
+    flexShrink: 0,
   },
 
   headerTitle: {
@@ -595,33 +639,37 @@ backgroundOverlay: {
   navigation: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
+  },
+
+  navigationCompact: {
+    width: "100%",
+    justifyContent: "flex-start",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+
+  navItem: {
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    borderRadius: 9,
   },
 
   navItemActive: {
     backgroundColor: "#193A4D",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
     borderBottomWidth: 3,
     borderBottomColor: "#35D4D8",
-    borderRadius: 9,
-  },
-
-  navItem: {
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-  },
-
-  navActiveText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-    fontSize: 14,
   },
 
   navText: {
     color: "#D0DCE9",
     fontSize: 14,
     fontWeight: "700",
+  },
+
+  navActiveText: {
+    color: "#FFFFFF",
+    fontWeight: "900",
   },
 
   systemStatus: {
@@ -648,7 +696,7 @@ backgroundOverlay: {
     fontWeight: "700",
   },
 
-  // CONTENIDO RESPONSIVE
+  // CONTENIDO
 
   scroll: {
     flex: 1,
@@ -658,37 +706,41 @@ backgroundOverlay: {
 
   scrollContent: {
     flexGrow: 1,
+    width: "100%",
     padding: 28,
     paddingBottom: 45,
   },
 
-  scrollContentMobile: {
-    padding: 16,
-    paddingTop: 22,
+  scrollContentCompact: {
+    paddingHorizontal: 22,
+    paddingTop: 24,
     paddingBottom: 35,
+  },
+
+  scrollContentPhone: {
+    paddingHorizontal: 14,
+    paddingTop: 20,
+    paddingBottom: 30,
   },
 
   mainLayout: {
     width: "100%",
     maxWidth: 1800,
     alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 24,
     minWidth: 0,
   },
 
-  mainMobile: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: 25,
+  mainColumns: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 22,
   },
 
-  mainTablet: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 24,
+  mainStack: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 26,
+    maxWidth: 760,
   },
 
   clientsColumn: {
@@ -697,7 +749,12 @@ backgroundOverlay: {
     paddingTop: 16,
   },
 
-  mobileColumn: {
+  identificationColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  columnCompact: {
     width: "100%",
     flex: 0,
     minWidth: 0,
@@ -705,22 +762,9 @@ backgroundOverlay: {
     paddingTop: 0,
   },
 
-  tabletClients: {
-    width: "48%",
-    flexBasis: "48%",
-    flexGrow: 1,
-    minWidth: 0,
-  },
-
-  identificationColumn: {
+  trainingContainer: {
     flex: 1,
-    minWidth: 0,
-  },
-
-  tabletIdentification: {
-    width: "48%",
-    flexBasis: "48%",
-    flexGrow: 1,
+    minHeight: 0,
     minWidth: 0,
   },
 
@@ -748,11 +792,16 @@ backgroundOverlay: {
     textShadowRadius: 7,
   },
 
+  mainTitlePhone: {
+    fontSize: 29,
+    lineHeight: 35,
+  },
+
   mainSubtitle: {
     color: "#FFFFFF",
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 25,
+    marginBottom: 23,
     textShadowColor: "rgba(0,0,0,0.9)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
@@ -770,7 +819,7 @@ backgroundOverlay: {
     paddingHorizontal: 17,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 27,
   },
 
   searchIcon: {
@@ -933,6 +982,12 @@ backgroundOverlay: {
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 7 },
     elevation: 5,
+    minWidth: 0,
+  },
+
+  identificationCardPhone: {
+    padding: 17,
+    borderRadius: 19,
   },
 
   stepRow: {
@@ -964,6 +1019,7 @@ backgroundOverlay: {
   identificationTitle: {
     color: NAVY,
     fontSize: 27,
+    lineHeight: 34,
     fontWeight: "900",
     marginBottom: 5,
   },
@@ -971,6 +1027,7 @@ backgroundOverlay: {
   identificationSubtitle: {
     color: "#52657C",
     fontSize: 14,
+    lineHeight: 21,
     marginBottom: 20,
   },
 
@@ -985,6 +1042,11 @@ backgroundOverlay: {
     gap: 11,
     marginBottom: 25,
     minWidth: 0,
+  },
+
+  selectedClientPhone: {
+    flexWrap: "wrap",
+    marginBottom: 20,
   },
 
   selectedAvatar: {
@@ -1030,6 +1092,16 @@ backgroundOverlay: {
     flexShrink: 0,
   },
 
+  sessionInfoPhone: {
+    width: "100%",
+    borderLeftWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#D5DFE9",
+    paddingLeft: 0,
+    paddingTop: 9,
+    justifyContent: "center",
+  },
+
   calendarIcon: {
     color: "#159FA7",
     fontSize: 24,
@@ -1044,16 +1116,17 @@ backgroundOverlay: {
 
   sessionLabel: {
     color: "#52657C",
-    fontSize: 9,
+    fontSize: 10,
   },
 
   // PIN
 
   pinContainer: {
+    width: "100%",
     flexDirection: "row",
     justifyContent: "center",
-    gap: 13,
-    marginBottom: 22,
+    gap: 10,
+    marginBottom: 20,
   },
 
   pinBox: {
@@ -1084,12 +1157,12 @@ backgroundOverlay: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 9,
-    marginBottom: 21,
+    rowGap: 9,
+    marginBottom: 20,
   },
 
   key: {
-    width: "31%",
+    width: "31.5%",
     height: 51,
     borderRadius: 13,
     backgroundColor: "#EDF2F7",
@@ -1118,6 +1191,7 @@ backgroundOverlay: {
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
+    lineHeight: 19,
   },
 
   successMessage: {
@@ -1126,7 +1200,7 @@ backgroundOverlay: {
 
   startButton: {
     width: "100%",
-    minHeight: 67,
+    minHeight: 62,
     backgroundColor: GREEN,
     borderRadius: 17,
     flexDirection: "row",
@@ -1164,14 +1238,14 @@ backgroundOverlay: {
   // MARCA LATERAL
 
   brandPanel: {
-    width: 245,
-    minHeight: 680,
+    width: 225,
+    minHeight: 650,
     borderRadius: 22,
     backgroundColor: "rgba(9,24,43,0.98)",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 18,
+    paddingVertical: 35,
+    paddingHorizontal: 16,
     overflow: "hidden",
     flexShrink: 0,
   },
@@ -1179,18 +1253,18 @@ backgroundOverlay: {
   brandContent: {
     alignItems: "center",
     width: "100%",
-    marginTop: 90,
+    marginTop: 65,
   },
 
   brandLogo: {
-    width: 165,
-    height: 125,
+    width: 155,
+    height: 115,
     marginBottom: 15,
   },
 
   brandName: {
     color: "#FFFFFF",
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: "900",
     textAlign: "center",
   },
@@ -1208,33 +1282,33 @@ backgroundOverlay: {
     height: 5,
     borderRadius: 5,
     backgroundColor: "#2ED4D0",
-    marginVertical: 40,
+    marginVertical: 35,
   },
 
   values: {
     width: "100%",
-    gap: 27,
-    paddingHorizontal: 12,
+    gap: 25,
+    paddingHorizontal: 8,
   },
 
   valueRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 12,
   },
 
   valueIcon: {
     color: "#2ED4D0",
-    fontSize: 29,
-    width: 35,
+    fontSize: 27,
+    width: 32,
     textAlign: "center",
   },
 
   valueText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "900",
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
 
   brandFooter: {
@@ -1245,7 +1319,7 @@ backgroundOverlay: {
     textAlign: "center",
   },
 
-  // PIE MÓVIL
+  // PIE EN MÓVIL Y TABLET
 
   mobileFooter: {
     width: "100%",
